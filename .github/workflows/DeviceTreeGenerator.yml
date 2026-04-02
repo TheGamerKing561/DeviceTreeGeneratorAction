@@ -41,6 +41,11 @@ jobs:
           python3 -m dumpyara rom.zip -o dump
           rm rom.zip
 
+      - name: Generate Device Tree
+        run: |
+          mkdir -p android/device/${{ github.event.inputs.brand }}
+          python3 -m aospdtgen dump -o android/device/${{ github.event.inputs.brand }}/${{ github.event.inputs.device_codename }}
+
       - name: Auto-fix proprietary-files.txt
         run: |
           FILE="android/device/${{ github.event.inputs.brand }}/${{ github.event.inputs.device_codename }}/proprietary-files.txt"
@@ -86,11 +91,7 @@ jobs:
           mv $TMP "$FILE"
       
           echo "Done fixing proprietary-files.txt"
-
-      - name: Generate Device Tree
-        run: |
-          mkdir -p android/device/${{ github.event.inputs.brand }}
-          python3 -m aospdtgen dump -o android/device/${{ github.event.inputs.brand }}/${{ github.event.inputs.device_codename }}
+      
 
       - name: Clone Extract Tools
         run: |
