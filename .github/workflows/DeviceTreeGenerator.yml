@@ -20,10 +20,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Cleanup Workspace (Slimhub)
-        # This clears ~20GB+ of space for large super.img dumps
-        uses: rokibhasansagar/slimhub_actions@main
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -39,7 +35,7 @@ jobs:
         run: |
           mkdir -p input output/dump
           wget -q "${{ github.event.inputs.rom_url }}" -O input/rom_file
-          python3 -m dumpyara input/rom_file output/dump
+          python3 -m dumpyara input/rom_file -o output/dump
           rm input/rom_file # Save space immediately
 
       - name: Generate Device Tree
