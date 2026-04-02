@@ -42,7 +42,7 @@ jobs:
       - name: Generate Device Tree
         run: |
           mkdir -p android/device/${{ github.event.inputs.brand }}
-          python3 -m aospdtgen dump -o android/device/${{ github.event.inputs.brand }}
+          python3 -m aospdtgen dump -o android/device/${{ github.event.inputs.brand }}/${{ github.event.inputs.device_codename }}
 
       - name: Clone Extract Tools
         run: |
