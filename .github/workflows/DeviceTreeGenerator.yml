@@ -41,6 +41,52 @@ jobs:
           python3 -m dumpyara rom.zip -o dump
           rm rom.zip
 
+      - name: Auto-fix proprietary-files.txt
+        run: |
+          FILE="android/device/${{ github.event.inputs.brand }}/${{ github.event.inputs.device_codename }}/proprietary-files.txt"
+          DUMP="$GITHUB_WORKSPACE/dump"
+          TMP=$(mktemp)
+      
+          echo "Fixing proprietary-files.txt with priority: product > vendor > system"
+      
+          while IFS= read -r line; do
+            # Preserve comments & empty lines
+            if [[ "$line" =~ ^#.*$ || -z "$line" ]]; then
+              echo "$line" >> $TMP
+              continue
+            fi
+      
+            # Skip already-correct entries
+            if [[ "$line" =~ ^(system|vendor|product)/ ]]; then
+              echo "$line" >> $TMP
+              continue
+            fi
+      
+            resolved=""
+      
+            # Priority: product → vendor → system
+            if [ -f "$DUMP/product/$line" ]; then
+              resolved="product/$line"
+            elif [ -f "$DUMP/vendor/$line" ]; then
+              resolved="vendor/$line"
+            elif [ -f "$DUMP/system/$line" ]; then
+              resolved="system/$line"
+            elif [ -f "$DUMP/system/system/$line" ]; then
+              resolved="system/$line"
+            fi
+      
+            if [ -n "$resolved" ]; then
+              echo "$resolved" >> $TMP
+            else
+              echo "# UNRESOLVED: $line" >> $TMP
+            fi
+      
+          done < "$FILE"
+      
+          mv $TMP "$FILE"
+      
+          echo "Done fixing proprietary-files.txt"
+
       - name: Generate Device Tree
         run: |
           mkdir -p android/device/${{ github.event.inputs.brand }}
