@@ -36,7 +36,7 @@ jobs:
           mkdir -p input output/dump
           wget -q "${{ github.event.inputs.rom_url }}" -O input/rom_file.zip
           python3 -m dumpyara input/rom_file.zip -o output/dump
-          rm input/rom_file # Save space immediately
+          rm input/rom_file.zip # Save space immediately
 
       - name: Generate Device Tree
         run: |
