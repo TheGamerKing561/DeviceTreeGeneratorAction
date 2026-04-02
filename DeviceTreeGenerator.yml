@@ -1,0 +1,87 @@
+name: Generate Device Tree/Vendor Tree
+
+on:
+  workflow_dispatch:
+    inputs:
+      rom_url:
+        description: 'Direct Link to ROM'
+        required: true
+      device_codename:
+        description: 'Device Codename'
+        required: true
+      brand:
+        description: 'Brand'
+        required: true
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Cleanup Workspace (Slimhub)
+        # This clears ~20GB+ of space for large super.img dumps
+        uses: rokibhasansagar/slimhub_actions@main
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y p7zip-full erofs-utils lz4 brotli liblzma-dev wget
+          pip3 install dumpyara aospdtgen
+
+      - name: Download and Dump ROM
+        run: |
+          mkdir -p input output/dump
+          wget -q "${{ github.event.inputs.rom_url }}" -O input/rom_file
+          python3 -m dumpyara input/rom_file output/dump
+          rm input/rom_file # Save space immediately
+
+      - name: Generate Device Tree
+        run: |
+          mkdir -p output/device_tree
+          python3 -m aospdtgen output/dump -o output/device_tree
+
+      - name: Setup LineageOS Extract-Utils
+        run: |
+          git clone https://github.com/LineageOS/android_tools_extract-utils.git ~/extract-utils
+          echo "PYTHONPATH=$PYTHONPATH:~/extract-utils" >> $GITHUB_ENV
+
+      - name: Generate Vendor Tree (Python)
+        run: |
+          DT_PATH=$(find output/device_tree -name "${{ github.event.inputs.device_codename }}")
+          cd "$DT_PATH"
+          export PATH=$PATH:~/extract-utils
+          # Running the python extractor pointing to the dump
+          python3 extract-files.py "$GITHUB_WORKSPACE/output/dump"
+
+      - name: Compress and Clean
+        run: |
+          # Create Zip for Device Tree
+          cd output/device_tree
+          7z a -tzip ../../${{ github.event.inputs.device_codename }}_dt.zip ./*
+          cd ../..
+
+          # Create Zip for Vendor Tree
+          # Paths are typically: vendor/brand/codename
+          VENDOR_PATH="vendor/${{ github.event.inputs.brand }}/${{ github.event.inputs.device_codename }}"
+          if [ -d "$VENDOR_PATH" ]; then
+            cd "$VENDOR_PATH"
+            7z a -tzip ../../../${{ github.event.inputs.device_codename }}_vendor.zip ./*
+            cd ../../../
+          fi
+          
+          # Delete the massive dump folder to speed up artifact upload
+          rm -rf output/dump
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.inputs.device_codename }}-trees
+          path: |
+            *.zip
