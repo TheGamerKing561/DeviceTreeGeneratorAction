@@ -70,7 +70,7 @@ jobs:
           export PYTHONPATH=$GITHUB_WORKSPACE/android/tools/extract-utils
           python3 extract-files.py "$GITHUB_WORKSPACE/dump"
 
-      - name: Compress Results
+      - name: Compress Device Tree
         run: |
           CODENAME="${{ github.event.inputs.device_codename }}"
           BRAND="${{ github.event.inputs.brand }}"
@@ -78,6 +78,11 @@ jobs:
           cd android/device/$BRAND/$CODENAME
           7z a -tzip $GITHUB_WORKSPACE/${CODENAME}_dt.zip ./*
           cd $GITHUB_WORKSPACE
+
+      - name: Compress Vendor Tree
+        run: |
+          CODENAME="${{ github.event.inputs.device_codename }}"
+          BRAND="${{ github.event.inputs.brand }}"
 
           if [ -d "android/vendor/$BRAND/$CODENAME" ]; then
             cd android/vendor/$BRAND/$CODENAME
@@ -87,9 +92,23 @@ jobs:
 
           rm -rf dump
 
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+      - name: Generate Tag
+        id: tag
+        run: |
+          echo "tag=${{ github.event.inputs.device_codename }}-$(date +'%Y%m%d-%H%M')" >> $GITHUB_OUTPUT
+
+      - name: Create Release and Upload Device & Vendor Trees
+        uses: softprops/action-gh-release@v2
         with:
-          name: ${{ github.event.inputs.device_codename }}-trees
-          path: |
-            *.zip
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "Generated device trees for ${{ github.event.inputs.brand }} ${{ github.event.inputs.device_codename }}"
+          body: |
+            Device Tree and Vendor Tree for ${{ github.event.inputs.device_codename }}.
+
+            - Brand: ${{ github.event.inputs.brand }}
+            - Device Codename: ${{ github.event.inputs.device_codename }}
+          files: |
+            $GITHUB_WORKSPACE/${{ github.event.inputs.device_codename }}_dt.zip
+            $GITHUB_WORKSPACE/${{ github.event.inputs.device_codename }}_vendor.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
