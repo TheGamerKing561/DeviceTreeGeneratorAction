@@ -37,7 +37,7 @@ jobs:
       - name: Dump ROM
         run: |
           mkdir -p dump
-          wget "${{ github.event.inputs.rom_url }}" -O rom.zip
+          wget -q "${{ github.event.inputs.rom_url }}" -O rom.zip
           python3 -m dumpyara rom.zip -o dump
           rm rom.zip
 
@@ -110,7 +110,7 @@ jobs:
             - Brand: ${{ github.event.inputs.brand }}
             - Device Codename: ${{ github.event.inputs.device_codename }}
           files: |
-            $GITHUB_WORKSPACE/${{ github.event.inputs.device_codename }}_dt.zip
-            $GITHUB_WORKSPACE/${{ github.event.inputs.device_codename }}_vendor.zip
+            *_dt.zip
+            *_vendor.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
