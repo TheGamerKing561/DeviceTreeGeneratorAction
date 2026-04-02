@@ -28,7 +28,7 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y p7zip-full erofs-utils lz4 brotli liblzma-dev wget
+          sudo apt-get install -y p7zip-full erofs-utils lz4 brotli liblzma-dev wget android-sdk-libsparse-utils
           pip3 install dumpyara aospdtgen
 
       - name: Download and Dump ROM
