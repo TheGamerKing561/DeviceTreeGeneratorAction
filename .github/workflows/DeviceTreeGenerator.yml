@@ -177,12 +177,22 @@ jobs:
         run: |
           IMG=""
           CUSTOM_IMAGE=${{ github.event.inputs.recovery_image_path }}
-
+      
           if [ -n "${{ github.event.inputs.recovery_image_path }}" ]; then
             echo "[*] Custom recovery image provided: $CUSTOM_IMAGE"
+      
+            # Download if it's a URL
+            if [[ "$CUSTOM_IMAGE" =~ ^https?:// ]]; then
+              echo "[*] Downloading custom image..."
+              mkdir -p custom
+              wget -q "$CUSTOM_IMAGE" -O custom/custom_recovery.img
+              CUSTOM_IMAGE="custom/custom_recovery.img"
+            fi
+      
             if [ -f dump/recovery.img ] || [ -f dump/boot.img ]; then
               echo "[*] Both custom image and dumped ROM images are available. Using dumped ROM image for TWRP generation."
             fi
+      
             if [ -f dump/recovery.img ]; then
               IMG="dump/recovery.img"
               echo "[*] Using recovery.img from dumped ROM"
@@ -190,7 +200,7 @@ jobs:
               IMG="dump/boot.img"
               echo "[*] Using boot.img from dumped ROM (fallback)"
             else
-              IMG="${{ github.event.inputs.recovery_image_path }}"
+              IMG="$CUSTOM_IMAGE"
               echo "[*] Using provided custom image as fallback."
             fi
           else
@@ -205,36 +215,36 @@ jobs:
               exit 0
             fi
           fi
-
+      
           if [ ! -d "twrpdtgen" ]; then
             git clone https://github.com/twrpdtgen/twrpdtgen.git
           fi
-
+      
           python3 -m twrpdtgen "$GITHUB_WORKSPACE/$IMG" -o "recovery/device"
-
+      
           GENERATED_DT=$(find recovery/device -mindepth 2 -type d | head -n 1)
-
+      
           if [ -z "$GENERATED_DT" ]; then
             echo "[!] TWRP device tree not found!"
             exit 1
           fi
-
+      
           BOARD_CONFIG="$GENERATED_DT/BoardConfig.mk"
-
+      
           if [ ! -f "$BOARD_CONFIG" ]; then
             echo "[!] BoardConfig.mk missing in TWRP tree!"
             exit 1
           fi
-
+      
           DEVICE_PATH=$(grep -m1 "DEVICE_PATH" "$BOARD_CONFIG" | cut -d= -f2 | tr -d ' ')
           TWRP_BRAND=$(echo "$DEVICE_PATH" | cut -d/ -f2)
           TWRP_CODENAME=$(echo "$DEVICE_PATH" | cut -d/ -f3)
-
+      
           echo "[*] Detected TWRP device tree: $TWRP_BRAND / $TWRP_CODENAME"
-
+      
           echo "TWRP_BRAND=$TWRP_BRAND" >> $GITHUB_ENV
           echo "TWRP_CODENAME=$TWRP_CODENAME" >> $GITHUB_ENV
-
+      
           # If BRAND/CODENAME are not set, use TWRP values
           if [ -z "${BRAND}" ]; then
             echo "BRAND=$TWRP_BRAND" >> $GITHUB_ENV
