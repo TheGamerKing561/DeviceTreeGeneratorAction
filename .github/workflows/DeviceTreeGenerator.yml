@@ -19,7 +19,7 @@ on:
           - device+recovery
           - device+vendor+recovery
       recovery_image_path:
-        description: 'Path to custom recovery.img or boot.img for recovery device tree generation (Optional)'
+        description: 'Direct link to custom recovery.img or boot.img for recovery device tree generation (Optional)'
         required: false
         default: ""
 
@@ -176,9 +176,10 @@ jobs:
         id: twrp_dt
         run: |
           IMG=""
+          CUSTOM_IMAGE=${{ github.event.inputs.recovery_image_path }}
 
           if [ -n "${{ github.event.inputs.recovery_image_path }}" ]; then
-            echo "[*] Custom recovery image provided: ${github.event.inputs.recovery_image_path}"
+            echo "[*] Custom recovery image provided: $CUSTOM_IMAGE"
             if [ -f dump/recovery.img ] || [ -f dump/boot.img ]; then
               echo "[*] Both custom image and dumped ROM images are available. Using dumped ROM image for TWRP generation."
             fi
