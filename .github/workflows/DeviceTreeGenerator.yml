@@ -18,6 +18,11 @@ on:
           - device+vendor
           - device+recovery
           - device+vendor+recovery
+      auto_fix_proprietary:
+        description: 'Run auto-fix for proprietary-files.txt'
+        required: true
+        default: true
+        type: boolean    
       recovery_image_path:
         description: 'Direct link to custom recovery.img or boot.img for recovery device tree generation (Optional)'
         required: false
@@ -104,7 +109,7 @@ jobs:
           rm -rf "$BASE"
 
       - name: Auto-fix proprietary-files.txt
-        if: contains(github.event.inputs.generation_type, 'device')
+        if: contains(github.event.inputs.generation_type, 'device') && github.event.inputs.auto_fix_proprietary == 'true'
         run: |
           FILE="android/device/$BRAND/$CODENAME/proprietary-files.txt"
           DUMP="$GITHUB_WORKSPACE/dump"
