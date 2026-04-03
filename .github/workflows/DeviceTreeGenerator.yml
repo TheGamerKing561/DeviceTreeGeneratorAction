@@ -100,6 +100,7 @@ jobs:
           rm -rf "$BASE"
 
       - name: Auto-fix proprietary-files.txt
+        if: contains(github.event.inputs.generation_type, 'device')
         run: |
           FILE="android/device/$BRAND/$CODENAME/proprietary-files.txt"
           DUMP="$GITHUB_WORKSPACE/dump"
