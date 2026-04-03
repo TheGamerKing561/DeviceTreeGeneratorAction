@@ -231,7 +231,7 @@ jobs:
       
           echo "[*] TWRP device tree generated at: $GENERATED_DT"
 
-      - name: Compress Device Tree
+      - name: Compress AOSP Device Tree
         run: |
           CODENAME=$CODENAME
           BRAND=$BRAND
@@ -271,7 +271,8 @@ jobs:
           # Compress the recovery device tree into a .zip file
           ZIP_PATH="$GITHUB_WORKSPACE/recovery_device_${BRAND}_${CODENAME}.zip"
           echo "[*] Compressing recovery device tree into $ZIP_PATH"
-          7z a -tzip "$ZIP_PATH" "$RECOVERY_DT_PATH"/*
+          cd "$RECOVERY_DT_PATH"
+          7z a -tzip "$ZIP_PATH" ./*
       
           echo "[*] Recovery device tree compressed successfully!"
 
