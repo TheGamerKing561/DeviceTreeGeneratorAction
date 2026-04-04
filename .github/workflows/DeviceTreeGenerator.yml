@@ -318,33 +318,33 @@ jobs:
       
           echo "tag=$TAG" >> $GITHUB_OUTPUT
   
-          - name: Generate Release Body
-            id: release_body
-            run: |
-             BODY="Generated Device Trees/Vendor Tree for ${{ env.CODENAME }}.
-              - Brand: ${{ env.BRAND }}
-              - Device Codename: ${{ env.CODENAME }}
-              - Generated trees: ${{ github.event.inputs.generation_type }}
-              - Dumped ROM link: ${{ github.event.inputs.rom_url }}"
-    
-              if [[ "${{ env.BRAND }}" != "${{ env.TWRP_BRAND }}" || "${{ env.CODENAME }}" != "${{ env.TWRP_CODENAME }}" ]]; then
-                BODY="$BODY
-              - Detected recovery device brand: ${{ env.TWRP_BRAND }}
-              - Detected recovery device codename: ${{ env.TWRP_CODENAME }}"
-             fi
-             
-             echo "RELEASE_BODY=$BODY" >> $GITHUB_ENV
-    
-          - name: Create Release and Upload Device & Vendor Trees
-            uses: softprops/action-gh-release@v2
-            with:
-              tag_name: ${{ steps.tag.outputs.tag }}
-              name: ${{ (env.BRAND != env.TWRP_BRAND || env.CODENAME != env.TWRP_CODENAME) && format('Generated device trees for {0} {1} ({2} {3})', env.BRAND, env.CODENAME, env.TWRP_BRAND, env.TWRP_CODENAME) || format('Generated device trees for {0} {1}', env.BRAND, env.CODENAME) }}
-              body:  ${{ env.RELEASE_BODY }}
-              files: |
-                android_device_*.zip
-                recovery_device_*.zip
-                proprietary_vendor_*.zip
-            env:
-              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Generate Release Body
+        id: release_body
+        run: |
+         BODY="Generated Device Trees/Vendor Tree for ${{ env.CODENAME }}.
+          - Brand: ${{ env.BRAND }}
+          - Device Codename: ${{ env.CODENAME }}
+          - Generated trees: ${{ github.event.inputs.generation_type }}
+          - Dumped ROM link: ${{ github.event.inputs.rom_url }}"
+
+          if [[ "${{ env.BRAND }}" != "${{ env.TWRP_BRAND }}" || "${{ env.CODENAME }}" != "${{ env.TWRP_CODENAME }}" ]]; then
+            BODY="$BODY
+          - Detected recovery device brand: ${{ env.TWRP_BRAND }}
+          - Detected recovery device codename: ${{ env.TWRP_CODENAME }}"
+         fi
+         
+         echo "RELEASE_BODY=$BODY" >> $GITHUB_ENV
+
+      - name: Create Release and Upload Device & Vendor Trees
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ${{ (env.BRAND != env.TWRP_BRAND || env.CODENAME != env.TWRP_CODENAME) && format('Generated device trees for {0} {1} ({2} {3})', env.BRAND, env.CODENAME, env.TWRP_BRAND, env.TWRP_CODENAME) || format('Generated device trees for {0} {1}', env.BRAND, env.CODENAME) }}
+          body:  ${{ env.RELEASE_BODY }}
+          files: |
+            android_device_*.zip
+            recovery_device_*.zip
+            proprietary_vendor_*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             
