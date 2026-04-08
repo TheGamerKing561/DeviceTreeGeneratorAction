@@ -317,23 +317,32 @@ jobs:
           fi
       
           echo "tag=$TAG" >> $GITHUB_OUTPUT
-  
+        
       - name: Generate Release Body
         id: release_body
         run: |
-         BODY="Generated Device Trees/Vendor Tree for ${{ env.CODENAME }}.
-          - Brand: ${{ env.BRAND }}
-          - Device Codename: ${{ env.CODENAME }}
-          - Generated trees: ${{ github.event.inputs.generation_type }}
-          - Dumped ROM link: ${{ github.event.inputs.rom_url }}"
-
-          if [[ "${{ env.BRAND }}" != "${{ env.TWRP_BRAND }}" || "${{ env.CODENAME }}" != "${{ env.TWRP_CODENAME }}" ]]; then
+          BRAND="${{ env.BRAND }}"
+          CODENAME="${{ env.CODENAME }}"
+          TWRP_BRAND="${{ env.TWRP_BRAND }}"
+          TWRP_CODENAME="${{ env.TWRP_CODENAME }}"
+          GENERATION_TYPE="${{ github.event.inputs.generation_type }}"
+          ROM_URL="${{ github.event.inputs.rom_url }}"
+      
+          BODY="Generated Device Trees/Vendor Tree for $CODENAME.
+          - Brand: $BRAND
+          - Device Codename: $CODENAME
+          - Generated trees: $GENERATION_TYPE
+          - Dumped ROM link: $ROM_URL"
+      
+          if [[ "$BRAND" != "$TWRP_BRAND" || "$CODENAME" != "$TWRP_CODENAME" ]]; then
             BODY="$BODY
-          - Detected recovery device brand: ${{ env.TWRP_BRAND }}
-          - Detected recovery device codename: ${{ env.TWRP_CODENAME }}"
-         fi
-         
-         echo "RELEASE_BODY=$BODY" >> $GITHUB_ENV
+          - Detected recovery device brand: $TWRP_BRAND
+          - Detected recovery device codename: $TWRP_CODENAME"
+          fi
+      
+          echo "RELEASE_BODY<<EOF" >> $GITHUB_ENV
+          echo "$BODY" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
          
       - name: Create Release and Upload Device & Vendor Trees
         uses: softprops/action-gh-release@v2
