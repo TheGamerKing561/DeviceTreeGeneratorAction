@@ -159,81 +159,110 @@ jobs:
         id: detect_device_info
         if: github.event.inputs.generation_type != 'recovery_only'
         run: |
-
+      
           BASE="android/device/tmp"
-
+      
+          BRAND=""
+          CODENAME=""
+      
           # =========================
           # DEVICE TREE MODE (existing)
           # =========================
           if [ "${{ github.event.inputs.generation_type }}" != "vendor_only" ]; then
-
-            DT_PATH=$(find "$BASE" -mindepth 1 -maxdepth 2 -type d | head -n 1)
-
-            if [ -z "$DT_PATH" ]; then
-              echo "Device tree not found!"
-              exit 1
+      
+            if [ -d "$BASE" ]; then
+      
+              DT_PATH=$(find "$BASE" -mindepth 1 -maxdepth 2 -type d | head -n 1)
+      
+              if [ -z "$DT_PATH" ]; then
+                echo "Device tree not found!"
+                exit 1
+              fi
+      
+              BOARD_CONFIG="$DT_PATH/BoardConfig.mk"
+      
+              if [ -f "$BOARD_CONFIG" ]; then
+                DEVICE_PATH=$(grep -m1 "DEVICE_PATH" "$BOARD_CONFIG" | cut -d= -f2 | tr -d ' ')
+                BRAND=$(echo "$DEVICE_PATH" | cut -d/ -f2)
+                CODENAME=$(echo "$DEVICE_PATH" | cut -d/ -f3)
+              fi
+      
             fi
-
-            BOARD_CONFIG="$DT_PATH/BoardConfig.mk"
-
-            DEVICE_PATH=$(grep -m1 "DEVICE_PATH" "$BOARD_CONFIG" | cut -d= -f2 | tr -d ' ')
-
-            BRAND=$(echo "$DEVICE_PATH" | cut -d/ -f2)
-            CODENAME=$(echo "$DEVICE_PATH" | cut -d/ -f3)
-
+      
           fi
-
+      
           # =========================
           # VENDOR_ONLY MODE
           # =========================
           if [ "${{ github.event.inputs.generation_type }}" == "vendor_only" ]; then
-
+      
             FILE=$(find android/device/tmpdt -name extract-files.py | head -n 1)
-
+      
             if [ -z "$FILE" ]; then
               echo "extract-files.py not found!"
               exit 1
             fi
-
-            # primary method (module args)
-            CODENAME=$(grep -oP "ExtractUtilsModule\(\s*'\K[^']+" "$FILE" | head -n 1)
-            BRAND=$(grep -oP "ExtractUtilsModule\(\s*'[^']+',\s*'\K[^']+" "$FILE" | head -n 1)
-
-            # =========================
-            # FALLBACK: BoardConfig.mk DEVICE_PATH
-            # =========================
-            if [ -z "$CODENAME" ] || [ -z "$BRAND" ]; then
-              echo "[!] ExtractUtilsModule parsing failed, trying BoardConfig.mk DEVICE_PATH fallback"
+      
+            eval $(python3 - << EOF
+            import re
             
-              BOARD_CONFIG=$(find android/device/tmpdt -name BoardConfig.mk | head -n 1)
+            file_path = "$FILE"
             
-              if [ -n "$BOARD_CONFIG" ]; then
-                DEVICE_PATH=$(grep -m1 "DEVICE_PATH" "$BOARD_CONFIG" | cut -d= -f2 | tr -d ' ')
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
             
-                if [ -n "$DEVICE_PATH" ]; then
-                  BRAND=$(echo "$DEVICE_PATH" | cut -d/ -f2)
-                  CODENAME=$(echo "$DEVICE_PATH" | cut -d/ -f3)
-                fi
+            match = re.search(r"ExtractUtilsModule\s*\((.*?)\)", content, re.S)
+            
+            if not match:
+                exit(1)
+            
+            args = match.group(1)
+            strings = re.findall(r"'([^']+)'", args)
+            
+            if len(strings) < 2:
+                exit(1)
+            
+            print(f"CODENAME={strings[0]}")
+            print(f"BRAND={strings[1]}")
+            EOF
+            )
+            
+          fi
+      
+          # =========================
+          # FALLBACK: BoardConfig.mk DEVICE_PATH
+          # =========================
+          if [ -z "$CODENAME" ] || [ -z "$BRAND" ]; then
+            echo "[!] ExtractUtilsModule parsing failed, trying BoardConfig.mk DEVICE_PATH fallback"
+      
+            BOARD_CONFIG=$(find android/device -name BoardConfig.mk | head -n 1)
+      
+            if [ -n "$BOARD_CONFIG" ]; then
+              DEVICE_PATH=$(grep -m1 "DEVICE_PATH" "$BOARD_CONFIG" | cut -d= -f2 | tr -d ' ')
+      
+              if [ -n "$DEVICE_PATH" ]; then
+                BRAND=$(echo "$DEVICE_PATH" | cut -d/ -f2)
+                CODENAME=$(echo "$DEVICE_PATH" | cut -d/ -f3)
               fi
             fi
-
-            if [ -z "$CODENAME" ] || [ -z "$BRAND" ]; then
-              echo "Failed to detect device info!"
-              exit 1
-            fi
-
-            echo "Detected device info: $BRAND / $CODENAME"
           fi
-
+      
+          if [ -z "$CODENAME" ] || [ -z "$BRAND" ]; then
+            echo "Failed to detect device info!"
+            exit 1
+          fi
+      
+          echo "Detected device info: $BRAND / $CODENAME"
+      
           # =========================
           # EXPORT (shared)
           # =========================
           echo "BRAND=$BRAND" >> $GITHUB_ENV
           echo "CODENAME=$CODENAME" >> $GITHUB_ENV
-
+      
           FINAL_PATH="android/device/$BRAND/$CODENAME"
           mkdir -p "android/device/$BRAND"
-
+      
           if [ "${{ github.event.inputs.generation_type }}" == "vendor_only" ]; then
             mv android/device/tmpdt "$FINAL_PATH"
           else
@@ -241,7 +270,7 @@ jobs:
             mv "$DT_PATH" "$FINAL_PATH"
             rm -rf "$BASE"
           fi
-
+        
       - name: Auto-fix proprietary-files.txt
         if: contains(github.event.inputs.generation_type, 'device') && github.event.inputs.auto_fix_proprietary == 'true'
         run: |
