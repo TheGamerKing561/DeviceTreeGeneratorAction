@@ -212,13 +212,11 @@ jobs:
               exit 1
             fi
       
-            FILE_PATH="$FILE"
-
-          eval "$(FILE_PATH="$FILE" python3 <<'EOF'
+            python3 <<EOF > vars.txt
             import re
             import os
 
-            file_path = os.environ["FILE_PATH"]
+            file_path = "$FILE"
 
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
@@ -237,8 +235,10 @@ jobs:
             print(f"CODENAME={strings[0]}")
             print(f"BRAND={strings[1]}")
             EOF
-            )"
-                
+
+            eval "$(cat vars.txt)"
+
+            echo "Parsed from extract-files.py: $BRAND / $CODENAME"    
           fi
       
           # =========================
@@ -584,11 +584,20 @@ jobs:
           echo "$BODY" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
          
+
+      - name: Generate release name
+        run: |
+          if [[ -n "$TWRP_BRAND" && -n "$TWRP_CODENAME" && ( "$BRAND" != "$TWRP_BRAND" || "$CODENAME" != "$TWRP_CODENAME" ) ]]; then
+            echo "RELEASE_NAME=Generated device trees for $BRAND $CODENAME ($TWRP_BRAND $TWRP_CODENAME)" >> $GITHUB_ENV
+          else
+            echo "RELEASE_NAME=Generated device trees for $BRAND $CODENAME" >> $GITHUB_ENV
+          fi
+
       - name: Create Release and Upload Device & Vendor Trees
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
-          name: ${{ (env.BRAND != env.TWRP_BRAND || env.CODENAME != env.TWRP_CODENAME) && format('Generated device trees for {0} {1} ({2} {3})', env.BRAND, env.CODENAME, env.TWRP_BRAND, env.TWRP_CODENAME) || format('Generated device trees for {0} {1}', env.BRAND, env.CODENAME) }}
+          name: ${{ env.RELEASE_NAME }}
           body:  ${{ env.RELEASE_BODY }}
           files: |
             android_device_*.zip
