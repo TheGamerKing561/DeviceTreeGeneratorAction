@@ -125,6 +125,8 @@ jobs:
               exit 1
             fi
 
+            mkdir -p dump
+
             wget -q "${{ github.event.inputs.vendor_only_zip_url }}" -O dump/rom.zip
 
             echo "USED_CUSTOM_ZIP=true" >> $GITHUB_ENV
