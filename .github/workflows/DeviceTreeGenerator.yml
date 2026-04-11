@@ -111,7 +111,7 @@ jobs:
                 ./DumprX/dumper.sh "${{ github.event.inputs.rom_url }}"
 
                 echo "[*] Moving DumprX output to dump folder..."
-                cp -r DumprX/out/* dump/
+                cp -r out/* dump/
 
               else
 
@@ -151,7 +151,7 @@ jobs:
                 ./DumprX/dumper.sh "${{ github.event.inputs.rom_url }}"
 
                 echo "[*] Moving DumprX output to dump folder..."
-                cp -r DumprX/out/* dump/
+                cp -r out/* dump/
 
               else
 
