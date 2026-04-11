@@ -113,9 +113,6 @@ jobs:
                 echo "[*] Moving DumprX output to dump folder..."
                 cp -r DumprX/out/* dump/
 
-                # Cleanup
-                rm -rf DumprX/out
-
               else
 
                 echo "[*] Running dumpyara..."
@@ -155,9 +152,6 @@ jobs:
 
                 echo "[*] Moving DumprX output to dump folder..."
                 cp -r DumprX/out/* dump/
-
-                # Cleanup
-                rm -rf DumprX/out
 
               else
 
