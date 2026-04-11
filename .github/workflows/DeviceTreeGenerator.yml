@@ -79,11 +79,13 @@ jobs:
 
           pip3 install dumpyara aospdtgen twrpdtgen
 
-          # Install DumprX
-          git clone https://github.com/DumprX/DumprX.git
-          cd DumprX
-          ./setup.sh
-          cd ..
+          if [ "${{ github.event.inputs.dumper_tool }}" == "dumprx" ]; then
+            # Install DumprX
+            git clone https://github.com/DumprX/DumprX.git
+            cd DumprX
+            ./setup.sh
+            cd ..
+          fi
 
       - name: Prepare ROM / Vendor Source
         run: |
@@ -94,8 +96,10 @@ jobs:
           if [ "${{ github.event.inputs.generation_type }}" != "vendor_only" ]; then
 
             if [ "${{ github.event.inputs.rom_url }}" != "none" ]; then
-              wget -q --content-disposition "${{ github.event.inputs.rom_url }}"
-              ROM_FILE=$(ls -tp | grep -v '/$' | head -n 1)
+              if [ "${{ github.event.inputs.dumper_tool }}" != "dumprx" ]; then
+                wget -q --content-disposition "${{ github.event.inputs.rom_url }}"
+                ROM_FILE=$(ls -tp | grep -v '/$' | head -n 1)
+              fi
 
               mkdir -p dump
 
@@ -104,7 +108,7 @@ jobs:
               if [ "${{ github.event.inputs.dumper_tool }}" == "dumprx" ]; then
 
                 echo "[*] Running DumprX..."
-                ./DumprX/dumper.sh "$ROM_FILE"
+                ./DumprX/dumper.sh "${{ github.event.inputs.rom_url }}"
 
                 echo "[*] Moving DumprX output to dump folder..."
                 cp -r DumprX/out/* dump/
@@ -135,8 +139,10 @@ jobs:
               exit 1
             fi
 
-            wget -q --content-disposition "${{ github.event.inputs.rom_url }}"
-            ROM_FILE=$(ls -t | head -n 1)
+            if [ "${{ github.event.inputs.dumper_tool }}" != "dumprx" ]; then
+              wget -q --content-disposition "${{ github.event.inputs.rom_url }}"
+              ROM_FILE=$(ls -tp | grep -v '/$' | head -n 1)
+            fi
 
             mkdir -p dump
 
@@ -145,7 +151,7 @@ jobs:
               if [ "${{ github.event.inputs.dumper_tool }}" == "dumprx" ]; then
 
                 echo "[*] Running DumprX..."
-                ./DumprX/dumper.sh "$ROM_FILE"
+                ./DumprX/dumper.sh "${{ github.event.inputs.rom_url }}"
 
                 echo "[*] Moving DumprX output to dump folder..."
                 cp -r DumprX/out/* dump/
