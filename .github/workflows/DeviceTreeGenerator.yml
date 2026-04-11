@@ -110,8 +110,10 @@ jobs:
                 echo "[*] Running DumprX..."
                 ./DumprX/dumper.sh "${{ github.event.inputs.rom_url }}"
 
-                echo "[*] Moving DumprX output to dump folder..."
-                cp -r out/* dump/
+                # echo "[*] Moving DumprX output to dump folder..."
+                # cp -r out/* dump/
+                pwd
+                ls -lR
 
               else
 
@@ -150,8 +152,10 @@ jobs:
                 echo "[*] Running DumprX..."
                 ./DumprX/dumper.sh "${{ github.event.inputs.rom_url }}"
 
-                echo "[*] Moving DumprX output to dump folder..."
-                cp -r out/* dump/
+                # echo "[*] Moving DumprX output to dump folder..."
+                # cp -r out/* dump/
+                pwd
+                ls -lR
 
               else
 
